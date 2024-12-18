@@ -1,0 +1,9 @@
+name: telematics
+
+services:
+  server:
+    image: tcp-server
+    build: .
+    command: bash -c "rm -f tmp/pids/server.pid"
+    volumes:
+      - .:/telematics
