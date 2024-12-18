@@ -7,18 +7,10 @@
 # Module is sending data packets every 2min.
 # When num_of_rec matching Tracker data, like latitude, longitude, speed is being saved to the DB.
 
-# To test Tracker creation locally use below data
-#
-# new_thread = ClientThread.new
-# tracker_data = [
-#   {:imei=>"357544374597827", :number_of_rec=>2, :date_time=>"2022-01-10T19:03:49", :priority=>0, :gps_data=>{:longitude=>27.53355, :latitude=>53.9341616, :altitude=>0, :angle=>0, :satellites=>0, :speed=>10}, :io_event_code=>0, :number_of_io_elements=>12, :io_data=>{239=>0, 240=>0, 21=>5, 200=>0, 69=>2, 181=>0, 182=>0, 66=>0, 67=>3953, 68=>0, 241=>25704, 16=>707167}},
-#   {:imei=>"357544374597827", :number_of_rec=>2, :date_time=>"2022-01-10T19:03:51", :priority=>0, :gps_data=>{:longitude=>27.53355, :latitude=>53.9341616, :altitude=>0, :angle=>0, :satellites=>0, :speed=>22}, :io_event_code=>240, :number_of_io_elements=>12, :io_data=>{239=>0, 240=>1, 21=>5, 200=>0, 69=>2, 181=>0, 182=>0, 66=>0, 67=>3949, 68=>0, 241=>25704, 16=>707167}},
-#   {:imei=>"357544374597827", :number_of_rec=>2, :date_time=>"2022-01-10T19:03:51", :priority=>0, :gps_data=>{:longitude=>0.0, :latitude=>0.0, :altitude=>0, :angle=>0, :satellites=>0, :speed=>0}, :io_event_code=>240, :number_of_io_elements=>12, :io_data=>{239=>0, 240=>1, 21=>5, 200=>0, 69=>2, 181=>0, 182=>0, 66=>0, 67=>3949, 68=>0, 241=>25704, 16=>707167}}
-# ]
-# p new_thread.create_tracker(tracker_data)
-
 require 'socket'
 require 'date'
+require 'data_decoder'
+require 'trackers_data'
 
 class ClientThread
   def initialize(port)
@@ -61,7 +53,7 @@ class ClientThread
                   p self.log("Done! Closing Connection")  # module has send, then communication is over. Otherwise if decoded
                   client.close                            # num_of_rec not matching with module's, then module will send data again.
 
-                  # DataTracker(decoder.decode) # Create Tracker
+                  # TrackersData.new(decoder.decode) # Create Tracker
                 end
               else
                 client.send([0x00].pack("C"), 0) # send negative response to module
