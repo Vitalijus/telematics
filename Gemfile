@@ -9,9 +9,7 @@ gem "http"
 gem 'rollbar'
 
 group :development, :test do
-  # gem 'rspec-rails'
-  # gem 'faker'
-  # gem 'factory_bot_rails'
+  gem 'rspec', '~> 3.4'
   gem 'pry', '~> 0.14.1'
 end
 

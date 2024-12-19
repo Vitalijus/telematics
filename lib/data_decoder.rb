@@ -8,7 +8,6 @@
 #   {:imei=>"357544374597827", :number_of_rec=>2, :date_time=>"2022-01-10T19:03:51", :priority=>0, :gps_data=>{:longitude=>0.0, :latitude=>0.0, :altitude=>0, :angle=>0, :satellites=>0, :speed=>0}, :io_event_code=>240, :number_of_io_elements=>12, :io_data=>{239=>0, 240=>1, 21=>5, 200=>0, 69=>2, 181=>0, 182=>0, 66=>0, 67=>3949, 68=>0, 241=>25704, 16=>707167}}
 # ]
 
-
 class DataDecoder
   def initialize(payload, imei)
     @payload = payload

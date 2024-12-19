@@ -3,11 +3,17 @@
 ![Version](https://img.shields.io/badge/dynamic/json?color=blue&label=version&prefix=v&query=%24.version&url=https%3A%2F%2Fe49ee07a33e40aab8c7c4b39816a12eb6734f2f0%40raw.githubusercontent.com%2FAutorama%2Fcustomers%2Fdevelop%2Fpackage.json)
 ![License](https://img.shields.io/badge/dynamic/json?color=888&label=license&query=%24.license&url=https%3A%2F%2Fe49ee07a33e40aab8c7c4b39816a12eb6734f2f0%40raw.githubusercontent.com%2FAutorama%2Fcustomers%2Fdevelop%2Fpackage.json)
 
-Rails app to store Teltonika telematics data.
 
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+
+### How it works?
+
+Teltonika module (e.g. FMT100) communicating with the AWS server. On first communication step module is authenticated by IMEI,
+second time data from the module decoded and confirmation about number_of_rec is sent back to the module.
+Positive response is sent to the server, if decoded num_of_rec matching with what
+module has send, then communication is over. Otherwise if decoded num_of_rec not matching with module's, then module will send data again. Module is sending data packets every 2min. When num_of_rec is matching, then module data, like latitude, longitude, speed is being passed to saved to the DB.
 
 ## Prerequisites
 
@@ -25,12 +31,7 @@ An example of GPRS settings:
 - domain: 52.12.75.4 (AWS Public IP)
 - port:65432 (AWS Security group PORT)
 
-### How it works?
 
-Teltonika module (e.g. FMT100) communicating with the AWS server. On first communication step module is authenticated by IMEI,
-second time data from module decoded and confirmation about number_of_rec is sent back to the module.
-Positive response is sent to the server, if decoded num_of_rec matching with what
-module has send, then communication is over. Otherwise if decoded num_of_rec not matching with module's, then module will send data again. Module is sending data packets every 2min. When num_of_rec is matching, then module data, like latitude, longitude, speed is being saved to the DB.
 
 - Teltonika Telematics: [https://teltonika-gps.com/](https://teltonika-gps.com/).
 - FMT100 module: [https://teltonika-gps.com/products/trackers/fmt100](https://teltonika-gps.com/products/trackers/fmt100).
@@ -38,23 +39,34 @@ module has send, then communication is over. Otherwise if decoded num_of_rec not
 
 ## Run the application
 
-Command to build the application:
-docker compose up --build
-
-Command to stop the application:
-docker compose down
-
-You can run the application detached from the terminal by adding the -d option.
-docker compose up --build -d
-
-Open a browser and view the application at http://localhost:3000
-## Installing
+To run this project follow below steps:
 
 Pull the application code from the github repo.
-
 ```sh
 git clone git@github.com:Autorama/Customers.git Customers
 ```
+
+Install dependencies
+```sh
+bundle install
+```
+
+Build the application:
+docker compose build
+
+Start the application:
+docker compose up
+
+Stop the application:
+docker compose down or cmd+c
+
+Open a browser and view the application at http://localhost:3000
+
+## Installing
+
+
+
+
 
 Change into the application directory.
 

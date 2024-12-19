@@ -10,10 +10,13 @@
 
 # After you have run required docker compose commands you might want to test TCP server
 # on your local machine.
-# First, confirm your TCP Server is running:
+# First, confirm your TCP Server is running on local machine:
 # lsof -iTCP -sTCP:LISTEN -n -P
 
-# Second, send message to the TCP Server using shell on local machine:
+# Confirm your TCP Server is running on AWS EC2 instance (Ubuntu):
+# sudo lsof -i -P -n | grep LISTEN
+
+# Second, send message to the TCP Server using shell locally or on EC2 Ubuntu instance:
 # echo -n -e '\x00\x02000F333536333037303432343431303133\xAB\xCD' | nc localhost 65432
 
 require 'socket'
