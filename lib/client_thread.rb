@@ -56,7 +56,7 @@ class ClientThread
                 client.send([0x01].pack("C"), 0) # send response to module
               elsif index == 1 # Second step in communication with module
                 decoder = DataDecoder.new(data, @imei) # Decode data
-                p self.log("FMT100 data decoding error: #{decoder}") if !decoder.present?
+                p self.log("FMT100 data decoded: #{decoder}")
                 # Rollbar.log("error", "FMT100 data decoding error: #{decoder}") if !decoder.present?
                 num_of_rec = decoder.number_of_rec # get number_of_rec
 
