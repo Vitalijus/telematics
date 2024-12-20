@@ -4,6 +4,8 @@ services:
   server:
     image: tcp-server
     build: .
+    environment:
+      TRACKERS_BASE_URL: https://www.google.com
     ports:
       - "65432:65432"
     volumes:

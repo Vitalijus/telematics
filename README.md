@@ -60,6 +60,9 @@ docker compose up
 Stop the application:
 docker compose down or cmd+c
 
+Restart the application:
+docker compose restart
+
 Open a browser and view the application at http://localhost:3000
 
 ## Installing
