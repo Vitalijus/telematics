@@ -1,106 +1,62 @@
 require './lib/data_decoder'
 require 'date'
+require 'pry'
 
 RSpec.describe DataDecoder do
-  let(:imei) { "123456789012345" }
-  let(:payload) { "00112233445566778899AABBCCDDEEFF00011223344556677889900" }
+  let(:payload) { "00000000000004cb0811000001820c370a70000ed84a7a209b648d009c01050e000e000e06ef01f0011504c8004501fa0105b50007b6000442369343102044000003f10000601ac70000002b10001b867900000001820c3725c8000ed8305f209b63e6009f01090e0018000e06ef01f0011504c8004501fa0105b50006b6000342369543102044000003f10000601ac70000002b10001b86a400000001820c373180000ed82590209b634000a101040e000d000e06ef01f0011504c8004501fa0105b50007b6000442367c43102044000003f10000601ac70000001210001b86b600000001820c373950000ed82155209b62aa00a300de0e0006000e06ef01f0011504c8004501fa0105b50006b6000442368243102044000003f10000601ac70000000710001b86bd00000001820c374120000ed8205b209b614c00a300c00e0008000e06ef01f0011504c8004501fa0105b50005b6000342368743102044000003f10000601ac70000000510001b86c200000001820c3748f0000ed81f50209b5f9a00a400ce0e0008000e06ef01f0011504c8004501fa0105b50007b6000442367343102044000003f10000601ac70000000210001b86c400000001820c374cd8000ed81e46209b5f3600a300e40d0006000e06ef01f0011504c8004501fa0105b50007b6000442367843102044000003f10000601ac70000000510001b86c900000001820c3750c0000ed81d4c209b5f0400a301080e0006000e06ef01f0011504c8004501fa0105b50007b6000442367943102044000003f10000601ac70000000010001b86c900000001820c375890000ed81a4d209b5f1500a101120e000a000e06ef01f0011504c8004501fa0105b50005b6000342368143102044000003f10000601ac70000000610001b86cf00000001820c376448000ed814a3209b5f5800a001060e000b000e06ef01f0011504c8004501fa0105b50007b6000442367d43102044000003f10000601ac70000000610001b86d500000001820c376c18000ed810bb209b5f26009f00fc0e000b000e06ef01f0011504c8004501fa0105b50007b6000442366f43102044000003f10000601ac70000000710001b86dc00000001820c377000000ed80f2b209b5ef4009f00f20e0007000e06ef01f0011504c8004501fa0105b50007b6000442367943102044000003f10000601ac70000000610001b86e200000001820c390640000ed80f1a209b5ed2009e00f20b0000f00e06ef01f0001504c8004501fa0105b50006b6000442315743102044000003f10000601ac70000000010001b86e200000001820c390a28000ed80f1a209b5ed2009e00f20b0000ef0e06ef00f0001504c8004501fa0105b50006b6000442315243102044000003f10000601ac70000000010001b86e200000001820c39ecb8000ed80f1a209b5ed2009b00f20d0000fa0e06ef00f0001504c8004501fa0005b50005b6000442319843102044000003f10000601ac70000000010001b86e200000001820c48bdb0000ed80f1a209b5ed2009200f20e0000000e06ef00f0001504c8004501fa0005b50005b6000342311343102044000003f10000601ac70000000010001b86e200000001820c48c580000ed81078209b5eb10092005a0e0000f00e06ef00f0011504c8004501fa0005b50005b600034230e943102044000003f10000601ac70000000010001b86e200110000a22f" }
+
+  let(:imei) { "867909012345678" }
   let(:decoder) { DataDecoder.new(payload, imei) }
 
-  describe '#initialize' do
-    it 'sets the payload and imei' do
-      expect(decoder.instance_variable_get(:@payload)).to eq(payload)
-      expect(decoder.instance_variable_get(:@imei)).to eq(imei)
-    end
-  end
-
-  describe '#number_of_rec' do
-    it 'returns the number of records' do
-      allow(payload).to receive(:[]).with(18..19).and_return("01")
-      expect(decoder.number_of_rec).to eq(1)
-    end
-  end
-
-  describe '#number_of_total_rec' do
-    it 'returns the total number of records' do
-      allow(payload).to receive(:[]).with(-10..-9).and_return("01")
-      expect(decoder.number_of_total_rec).to eq(1)
-    end
-  end
-
-  describe '#timestamp' do
-    let(:avl_data) { "0000000166D1A32B000001" }
-
-    it 'converts hex timestamp to human-readable format' do
-      position = 0
-      expected_time = "2022-01-01T00:00:00" # Example expected time
-      allow(DateTime).to receive(:strptime).and_return(DateTime.parse(expected_time))
-      expect(decoder.timestamp(avl_data, position)).to eq(expected_time)
-    end
-  end
-
-  describe '#priority' do
-    let(:avl_data) { "0000000166D1A32B000001" }
-
-    it 'returns the priority as an integer' do
-      position = 16
-      allow(avl_data).to receive(:[]).with(position..position + 1).and_return("02")
-      expect(decoder.priority(avl_data, position)).to eq(2)
-    end
-  end
-
-  describe '#longitude' do
-    let(:avl_data) { "0000000166D1A32B000001" }
-
-    it 'converts hex longitude to a floating point value' do
-      position = 18
-      allow(avl_data).to receive(:[]).with(position..position + 7).and_return("01234567")
-      expect(decoder.longitude(avl_data, position)).to eq(19088743 / 10000000.0)
-    end
-  end
-
-  describe '#latitude' do
-    let(:avl_data) { "0000000166D1A32B000001" }
-
-    it 'converts hex latitude to a floating point value' do
-      position = 26
-      allow(avl_data).to receive(:[]).with(position..position + 7).and_return("89ABCDEF")
-      expect(decoder.latitude(avl_data, position)).to eq(2309737967 / 10000000.0)
-    end
-  end
-
   describe '#decode' do
-    let(:payload) do
-      "0000000100000000166D1A32B" +  # Header (1 record, timestamp)
-        "02" +                      # Priority
-        "01234567" +                # Longitude
-        "89ABCDEF" +                # Latitude
-        "0000" +                    # Altitude
-        "0001" +                    # Angle
-        "02" +                      # Satellites
-        "000A" +                    # Speed
-        "03" +                      # IO Event Code
-        "01" +                      # Number of IO Elements
-        "01" +                      # Number of 1-Bit IO Elements
-        "01" + "01" +               # 1-Bit IO Element (ID, Value)
-        "01" + "0001" +             # 2-Bit IO Element
-        "01" + "00000001" +         # 4-Bit IO Element
-        "01" + "0000000000000001"   # 8-Bit IO Element
+    it 'returns the correct imei' do
+      decoded_data = decoder.decode
+      expect(decoded_data.first[:imei]).to eq("867909012345678")
     end
 
-    it 'decodes payload into meaningful data' do
-      decoded = decoder.decode
+    it 'returns the correct number of records' do
+      decoded_data = decoder.decode
+      expect(decoded_data.size).to eq(17)
+    end
 
-      expect(decoded.size).to eq(1)
-      expect(decoded.first[:imei]).to eq(imei)
-      expect(decoded.first[:number_of_rec]).to eq(1)
-      expect(decoded.first[:gps_data][:longitude]).to eq(19088743 / 10000000.0)
-      expect(decoded.first[:gps_data][:latitude]).to eq(2309737967 / 10000000.0)
-      expect(decoded.first[:gps_data][:altitude]).to eq(0)
-      expect(decoded.first[:gps_data][:angle]).to eq(1)
-      expect(decoded.first[:gps_data][:satellites]).to eq(2)
-      expect(decoded.first[:gps_data][:speed]).to eq(10)
-      expect(decoded.first[:io_event_code]).to eq(3)
-      expect(decoded.first[:io_data]).to eq({ 1 => 1, 2 => 1, 3 => 1, 4 => 1 })
+    it 'correctly decodes the first record timestamp' do
+      decoded_data = decoder.decode
+      expect(decoded_data.first[:date_time]).to eq("2022-07-17T12:51:50")
+    end
+
+    it 'correctly decodes priority' do
+      decoded_data = decoder.decode
+      expect(decoded_data.first[:priority]).to eq(0)
+    end
+
+    it 'parses GPS data correctly' do
+      decoded_data = decoder.decode
+      gps_data = decoded_data.first[:gps_data]
+
+      expect(gps_data).not_to be_empty
+      expect(gps_data[:longitude]).to eq(24.9055866)
+      expect(gps_data[:latitude]).to eq(54.7054733)
+      expect(gps_data[:altitude]).to eq(156)
+      expect(gps_data[:angle]).to eq(261)
+      expect(gps_data[:satellites]).to eq(14)
+      expect(gps_data[:speed]).to eq(14)
+    end
+
+    it 'correctly decodes io_event_code' do
+      decoded_data = decoder.decode
+      expect(decoded_data.first[:io_event_code]).to eq(0)
+    end
+
+    it 'correctly decodes number_of_io_elements' do
+      decoded_data = decoder.decode
+      expect(decoded_data.first[:number_of_io_elements]).to eq(14)
+    end
+
+    it 'correctly parses IO data' do
+      decoded_data = decoder.decode
+      io_data = decoded_data.first[:io_data]
+      expect(io_data.keys).to include(239, 240, 21, 200, 69, 250, 181, 182, 66, 67, 68, 241, 199, 16)
+      expect(io_data[1]).to eq(nil)
     end
   end
 end
