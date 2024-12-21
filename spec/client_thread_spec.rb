@@ -1,57 +1,94 @@
-# require './lib/client_thread'
-# require 'socket'
-#
-# RSpec.describe ClientThread do
-#   let(:port) { 65432 }
-#   let(:server) { ClientThread.new(port) }
-#   let(:mock_client) { instance_double(TCPSocket) }
-#
-#   before do
-#     allow(TCPServer).to receive(:open).and_return(instance_double(TCPServer, accept: mock_client))
-#     allow(mock_client).to receive(:close)
-#   end
-#
-#   describe '#initialize' do
-#     it 'creates a TCP server on the specified port' do
-#       expect(TCPServer).to receive(:open).with(port)
-#       ClientThread.new(port)
-#     end
-#   end
-#
-#   describe '#log' do
-#     it 'logs a message with a timestamp' do
-#       message = "Test message"
-#       time = Time.utc(2024, 1, 1, 12, 0, 0)
-#       allow(Time).to receive(:now).and_return(time)
-#       expect(server.log(message)).to eq("2024-01-01T12:00:00 #{message}")
-#     end
-#   end
-#
-#   describe '#handle_client' do
-#     it 'authenticates the client and sends a response' do
-#       imei = "123456789012345"
-#       buffer = [0, imei].pack("Sa*")
-#       allow(mock_client).to receive(:recv).and_return(buffer)
-#       expect(mock_client).to receive(:send).with([0x01].pack("C"), 0)
-#       server.handle_client(mock_client)
-#     end
-#
-#     it 'sends a negative response if data is nil' do
-#       buffer = [0, "123456789012345"].pack("Sa*")
-#       allow(mock_client).to receive(:recv).and_return(buffer, nil)
-#       expect(mock_client).to receive(:send).with([0x01].pack("C"), 0).ordered
-#       expect(mock_client).to receive(:send).with([0x00].pack("C"), 0).ordered
-#       server.handle_client(mock_client)
-#     end
-#   end
-#
-#   describe '#run' do
-#     it 'starts the server loop and accepts clients' do
-#       allow(Thread).to receive(:start).and_yield
-#       expect(mock_client).to receive(:recv).and_return([0, "123456789012345"].pack("Sa*"))
-#       expect(mock_client).to receive(:send).with([0x01].pack("C"), 0)
-#       expect(mock_client).to receive(:close)
-#       Thread.new { server.run }.kill # Start and immediately stop the loop
-#     end
-#   end
-# end
+require './lib/client_thread'
+require 'socket'
+require 'pry'
+
+RSpec.describe ClientThread do
+  let(:mock_server) { instance_double(TCPServer) }
+  let(:mock_client) { instance_double(TCPSocket) }
+  let(:mock_decoder) { instance_double(DataDecoder) }
+  let(:port) { 65432 }
+  let(:auth_response) { [0x01].pack("C") }
+  let(:negative_response) { [0x00].pack("C") }
+  let(:imei) { "123456789012345" }
+  let(:data) { "\x00\x00\x00\x00\x00\x00\x04\xCB\b\x11\x00\x00\x01\x82\x02\xCB_\xB8\x00\x0F\x15%R \x9B5j\x00e\x00\xB7\x0F\x00\e\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x06\xB6\x00\x03B6\x9BC\x10\x1FD\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00\x0E\x10\x00\x19p\xE0\x00\x00\x00\x01\x82\x02\xCBkp\x00\x0F\x15$\x15 \x9B*\xEF\x00d\x00\xB8\x0E\x00&\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x06\xB6\x00\x03B6\xA2C\x10\x1ED\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00\x1E\x10\x00\x19p\xFE\x00\x00\x00\x01\x82\x02\xCB\x8E\x98\x00\x0F\x15\x1CE \x9B\x04\xB8\x00`\x00\xBC\x0F\x002\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x06\xB6\x00\x03B6\x93C\x10\x1ED\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00n\x10\x00\x19ql\x00\x00\x00\x01\x82\x02\xCB\xA9\xF0\x00\x0F\x15\x10[ \x9A\xE0\x85\x00_\x00\xC2\x0F\x004\x00\x0E\x06\xEF\x01\xF0\x01\x15\x04\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x05\xB6\x00\x03B6\x81C\x10\x1FD\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00h\x10\x00\x19q\xD4\x00\x00\x00\x01\x82\x02\xCB\xC5H\x00\x0F\x14\xFE  \x9A\xB9u\x00^\x00\xC5\x0F\x00=\x00\x0E\x06\xEF\x01\xF0\x01\x15\x04\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x05\xB6\x00\x03B6\x9AC\x10 D\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00t\x10\x00\x19rH\x00\x00\x00\x01\x82\x02\xCB\xDC\xB8\x00\x0F\x14\xEB\x81 \x9A\x976\x00_\x00\xCA\x0E\x00>\x00\x0E\x06\xEF\x01\xF0\x01\x15\x04\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x05\xB6\x00\x04B6\x9DC\x10 D\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00f\x10\x00\x19r\xAE\x00\x00\x00\x01\x82\x02\xCB\xF4(\x00\x0F\x14\xD2q \x9Aw\r\x00`\x00\xCC\x0E\x00;\x00\x0E\x06\xEF\x01\xF0\x01\x15\x04\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x05\xB6\x00\x04B6\x92C\x10 D\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00d\x10\x00\x19s\x12\x00\x00\x00\x01\x82\x02\xCC\v\x98\x00\x0F\x14\xB7\xAF \x9AY\xD2\x00^\x00\xD1\r\x00/\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x05\xB6\x00\x03B6\x8CC\x10 D\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00^\x10\x00\x19sp\x00\x00\x00\x01\x82\x02\xCC\x13h\x00\x0F\x14\xB0C \x9AR\xFB\x00_\x00\xD0\x0E\x00%\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x05\xB6\x00\x03B6~C\x10\eD\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00\x17\x10\x00\x19s\x87\x00\x00\x00\x01\x82\x02\xCC\e8\x00\x0F\x14\xAA\xEC \x9AN\t\x00_\x00\xD1\f\x00\x19\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\b\xB6\x00\x04B6\x92C\x10 D\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00\x11\x10\x00\x19s\x98\x00\x00\x00\x01\x82\x02\xCC#\b\x00\x0F\x14\xA80 \x9AJ\x96\x00_\x00\xCB\x0E\x00\x0F\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x06\xB6\x00\x04B6zC\x10\x1ED\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00\v\x10\x00\x19s\xA3\x00\x00\x00\x01\x82\x02\xCC*\xD8\x00\x0F\x14\xA7\xCC \x9AI\xBD\x00_\x00\xCC\x0F\x00\x04\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x06\xB6\x00\x04B6\xD8C\x10 D\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00\x00\x10\x00\x19s\xA3\x00\x00\x00\x01\x82\x02\xCC\x84\xB0\x00\x0F\x14\xA5B \x9AH-\x00_\x00\xD8\r\x00\v\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x05\xB6\x00\x04B6\x80C\x10\x1ED\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00\b\x10\x00\x19s\xAB\x00\x00\x00\x01\x82\x02\xCC\x8C\x80\x00\x0F\x14\xA1\xCF \x9ADV\x00_\x00\xD5\r\x00\x17\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x06\xB6\x00\x04B6\x86C\x10\x1DD\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00\r\x10\x00\x19s\xB8\x00\x00\x00\x01\x82\x02\xCC\x94P\x00\x0F\x14\x9B+ \x9A>H\x00^\x00\xD1\x0F\x00$\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x06\xB6\x00\x03B6\x95C\x10 D\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00\t\x10\x00\x19s\xC1\x00\x00\x00\x01\x82\x02\xCC\xBFH\x00\x0F\x14xg \x9A\x1D5\x00^\x00\xD2\x10\x00&\x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x05\xB6\x00\x03B6\x98C\x10 D\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00y\x10\x00\x19t:\x00\x00\x00\x01\x82\x02\xCC\xCE\xE8\x00\x0F\x14k\x83 \x9A\x11}\x00_\x00\xDD\x10\x00 \x00\x0E\x06\xEF\x01\xF0\x01\x15\x05\xC8\x00E\x01\xFA\x01\x05\xB5\x00\x04\xB6\x00\x03B6\x8FC\x10 D\x00\x00\x03\xF1\x00\x00`\x1A\xC7\x00\x00\x00(\x10\x00\x19tb\x00\x11\x00\x00p8"
+ }
+  let(:client_thread) do
+    allow(TCPServer).to receive(:open).with(port).and_return(mock_server)
+    described_class.new(port)
+  end
+
+  before do
+    allow(mock_server).to receive(:accept).and_return(mock_client)
+  end
+
+  describe '#initialize' do
+    it 'initializes with a given port and sets the server and imei' do
+      expect(client_thread.instance_variable_get(:@server)).to eq(mock_server)
+      expect(client_thread.instance_variable_get(:@imei)).to eq("unknown")
+    end
+  end
+
+  describe '#log' do
+    it 'formats log messages with UTC timestamp' do
+      message = "Test message"
+      expect(client_thread.log(message)).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2} #{message}/)
+    end
+  end
+
+  describe '#handle_authentication' do
+    it 'sends authentication response and logs the IMEI' do
+      expect(mock_client).to receive(:send).with(auth_response, 0)
+      expect { client_thread.handle_authentication(mock_client, imei) }.to output(/Device Authenticated \| IMEI: #{imei}/).to_stdout
+    end
+  end
+
+  describe '#handle_data_decoding' do
+    before do
+      allow(DataDecoder).to receive(:new).with(data, imei).and_return(mock_decoder)
+    end
+
+    # context 'when decoder is nil' do
+    #   it 'sends negative response and logs an error' do
+    #     binding.pry
+    #     allow(DataDecoder).to receive(:new).with(data, imei).and_return(nil)
+    #     expect(mock_client).to receive(:send).with(negative_response, 0)
+    #     expect { client_thread.handle_data_decoding(mock_client, data) }.to output(/FMT100 data decoding error/).to_stdout
+    #   end
+    # end
+
+    # context 'when number of records is 0' do
+    #   it 'sends negative response' do
+    #     allow(mock_decoder).to receive(:number_of_rec).and_return(0)
+    #     expect(mock_client).to receive(:send).with(negative_response, 0)
+    #     expect { client_thread.handle_data_decoding(mock_client, data) }.to_not raise_error
+    #   end
+    # end
+
+    # context 'when records are present' do
+    #   let(:decoded_data) { [{ key: "value" }] }
+    #
+    #   it 'logs decoded data and sends number of records' do
+    #     allow(decoder).to receive(:number_of_rec).and_return(1)
+    #     allow(decoder).to receive(:decode).and_return(decoded_data)
+    #
+    #     expect(mock_client).to receive(:send).with([1].pack("L>"), 0)
+    #     expect { client_thread.handle_data_decoding(mock_client, data) }.
+    #       to output(/Decoded data: #{decoded_data}/).to_stdout
+    #   end
+    # end
+  end
+
+  describe '#run' do
+    it 'logs server start and processes client connections in threads' do
+      allow(Thread).to receive(:start).and_yield(mock_client)
+      allow(client_thread).to receive(:handle_client)
+      allow(mock_client).to receive(:close)
+
+      # Ensure `loop` doesn't run indefinitely
+      allow(client_thread).to receive(:loop).and_yield.once
+
+      expect { client_thread.run }.to output(/Started TCP Server/).to_stdout
+      expect(client_thread).to have_received(:handle_client).with(mock_client)
+    end
+  end
+end
