@@ -8,9 +8,34 @@ class DataBuilder
 
   def data_builder
     @data.each do |item|
-      new_tracker = Trackers::CreateTracker.new(item)
-      new_tracker.call
+      if tracker_valid?(item)
+        io_data = io_data(item)
+
+        new_tracker = Trackers::CreateTracker.new(item, io_data)
+        new_tracker.call
+      end
     end
+  end
+
+  private
+
+  # Check if gps data is above certain level
+  def tracker_valid?(item)
+    item[:gps_data][:latitude] != 0.0 &&
+      item[:gps_data][:longitude] != 0.0 &&
+      item[:gps_data][:speed] > 3
+  end
+
+  # IO data collection.
+  def io_data(item)
+    io_hash = {}
+
+    item[:io_data].each do |k,v|
+      io_hash[:total_odometer] = v if k == 16 # IO Total odometer
+      io_hash[:trip_odometer] = v if k == 199 # IO Trip odometer
+    end
+
+    io_hash
   end
 end
 

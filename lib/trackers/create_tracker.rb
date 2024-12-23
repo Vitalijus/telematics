@@ -4,12 +4,13 @@ require 'http'
 module Trackers
   class CreateTracker
 
-    def initialize(item)
+    def initialize(item, io_data)
       @item = item
+      @io_data = io_data
     end
 
     def call
-      response = HTTP.post("https://fmt100-dev-66b0084c460c.herokuapp.com/graphql", params: { query: query(@item) })
+      response = HTTP.post("https://fmt100-dev-66b0084c460c.herokuapp.com/graphql", params: { query: query(@item, @io_data) })
       response.parse
     rescue StandardError => e
       Rails.logger.error("============================ #{e.message} ===================================")
@@ -18,7 +19,7 @@ module Trackers
 
     private
 
-    def query(item)
+    def query(item, io_data)
       <<~GQL
         mutation createTracker {
           createTracker(input: {
@@ -26,6 +27,8 @@ module Trackers
             latitude: #{item[:gps_data][:latitude]},
             longitude: #{item[:gps_data][:longitude]},
             speed: #{item[:gps_data][:speed]},
+            totalOdometer: #{io_data[:total_odometer]},
+            tripOdometer: #{io_data[:trip_odometer]},
             dateTime: "#{item[:date_time]}"
           }){
             imei
