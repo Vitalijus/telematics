@@ -34,7 +34,7 @@ require 'pry'
 require 'socket'
 require 'date'
 require_relative 'data_decoder'
-require_relative 'trackers/create_update_tracker'
+require_relative 'data_builder'
 
 class ClientThread
   NEGATIVE_RESPONSE = [0x00].pack("C")
@@ -92,7 +92,9 @@ class ClientThread
     else
       log_and_report("Decoded data: #{decoder.decode}")
       client.send([num_of_rec].pack("L>"), 0)
-      # CreateUpdateTracker
+      new_data_builder = DataBuilder.new(decoder.decode)
+      builder = new_data_builder.data_builder
+      log_and_report("Build data: #{builder}")
       log_and_report("Done! Closing Connection")
     end
   end

@@ -1,4 +1,4 @@
-require './lib/trackers/create_update_tracker.rb'
+require './lib/trackers/create_tracker.rb'
 
 # RSpec.describe Trackers::CreateUpdateTracker do
 #
