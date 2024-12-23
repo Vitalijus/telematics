@@ -93,8 +93,7 @@ class ClientThread
       log_and_report("Decoded data: #{decoder.decode}")
       client.send([num_of_rec].pack("L>"), 0)
       new_data_builder = DataBuilder.new(decoder.decode)
-      builder = new_data_builder.data_builder
-      log_and_report("Build data: #{builder}")
+      new_data_builder.data_builder
       log_and_report("Done! Closing Connection")
     end
   end

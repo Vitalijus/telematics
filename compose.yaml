@@ -4,8 +4,6 @@ services:
   server:
     image: tcp-server
     build: .
-    environment:
-      TRACKERS_BASE_URL: https://fmt100-dev-66b0084c460c.herokuapp.com/
     ports:
       - "65432:65432"
     volumes:
