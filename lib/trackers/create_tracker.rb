@@ -40,7 +40,6 @@ module Trackers
             totalOdometer
             tripOdometer
             address
-            displayName
           }
         }
       GQL
