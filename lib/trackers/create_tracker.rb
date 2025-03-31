@@ -10,7 +10,7 @@ module Trackers
     end
 
     def call
-      response = HTTP.post("https://fmt100-dev-66b0084c460c.herokuapp.com/graphql", params: { query: query(@item, @io_data) })
+      response = HTTP.post("https://smartroute.io/graphql", params: { query: query(@item, @io_data) })
       response.parse
     rescue StandardError => e
       Rails.logger.error("============================ #{e.message} ===================================")
